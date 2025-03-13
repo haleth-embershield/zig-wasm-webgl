@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>ASCII FlappyBird</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #c0c0c0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #0a0a0a;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(100, 100, 100, 0.5);
+            max-width: 100%;
+            width: 95%;
+            margin: 0 auto;
+            text-align: center;
+            border: 1px solid #444;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #d0d0d0;
+            margin-top: 0;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+        }
+        canvas {
+            border: 1px solid #444;
+            background-color: #000;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            max-width: 100%;
+            height: auto;
+        }
+        .status {
+            margin-top: 10px;
+            color: #a0a0a0;
+            font-size: 0.9rem;
+        }
+        .score-display {
+            font-size: 24px;
+            color: #d0d0d0;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+        .high-score {
+            font-size: 18px;
+            color: #a0a0a0;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+        }
+        .log-container {
+            margin-top: 10px;
+            border: 1px solid #444;
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            background-color: #0a0a0a;
+            color: #a0a0a0;
+            transition: height 0.3s ease;
+        }
+        .log-container.hidden {
+            height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-width: 0;
+            margin-top: 0;
+            overflow: hidden;
+        }
+        .log-entry {
+            margin: 2px 0;
+            font-size: 14px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px auto;
+            max-width: 100%;
+            padding: 0 10px;
+        }
+        button {
+            background-color: #222;
+            color: #c0c0c0;
+            border: 1px solid #444;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #333;
+            color: #fff;
+            box-shadow: 0 0 5px rgba(100, 100, 100, 0.5);
+        }
+        .controls-info {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: left;
+            background-color: #0a0a0a;
+        }
+        .controls-info h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #d0d0d0;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        }
+        .controls-info ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #a0a0a0;
+        }
+        .controls-info li {
+            margin: 5px 0;
+        }
+        .log-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding: 5px 10px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            background-color: #0a0a0a;
+        }
+        .log-toggle:hover {
+            background-color: #222;
+        }
+        .log-toggle-icon {
+            transition: transform 0.3s ease;
+        }
+        .log-toggle.collapsed .log-toggle-icon {
+            transform: rotate(-90deg);
+        }
+        .jump-button {
+            width: 100%;
+            max-width: 300px;
+            margin: 10px auto;
+            padding: 15px 30px;
+            font-size: clamp(16px, 4vw, 18px);
+        }
+        .jump-button:hover {
+            background-color: #444;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(100, 100, 100, 0.5);
+        }
+        .jump-button:active {
+            transform: scale(0.95);
+        }
+        .game-over-message {
+            color: #d07070;
+            font-size: 24px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+            display: none;
+        }
+        .game-over-message.visible {
+            display: block;
+        }
+        
+        /* ASCII toggle styling */
+        .ascii-toggle {
+            flex: 1 1 auto;
+            min-width: 200px;
+            max-width: 300px;
+            margin: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #222;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            box-sizing: border-box;
+        }
+        
+        .ascii-toggle label {
+            margin-right: 8px;
+            color: #c0c0c0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .ascii-toggle input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 40px;
+            height: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.3s;
+        }
+        
+        .ascii-toggle input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            background-color: #c0c0c0;
+            transition: transform 0.3s;
+        }
+        
+        .ascii-toggle input[type="checkbox"]:checked {
+            background-color: #444;
+        }
+        
+        .ascii-toggle input[type="checkbox"]:checked::before {
+            transform: translateX(20px);
+            background-color: #d0d0d0;
+        }
+        
+        /* Character set selector styling */
+        .char-set-selector {
+            flex: 1 1 auto;
+            min-width: 200px;
+            max-width: 300px;
+            margin: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #222;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            box-sizing: border-box;
+        }
+        
+        .char-set-selector label {
+            margin-right: 8px;
+            color: #c0c0c0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .char-set-selector select {
+            background-color: #333;
+            color: #c0c0c0;
+            border: 1px solid #555;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            outline: none;
+        }
+        
+        .char-set-selector select:hover {
+            background-color: #444;
+        }
+        
+        .char-set-selector select:focus {
+            border-color: #777;
+            box-shadow: 0 0 3px rgba(150, 150, 150, 0.5);
+        }
+        
+        /* ASCII art title */
+        .ascii-title {
+            font-family: monospace;
+            white-space: pre;
+            line-height: 1.2;
+            color: #d0d0d0;
+            margin: 0 auto 20px;
+            font-size: min(12px, 2.5vw);
+            text-align: center;
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        .fps-counter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            z-index: 100;
+        }
+        
+        /* Volume control styling */
+        .volume-control {
+            flex: 1 1 auto;
+            min-width: 200px;
+            max-width: 300px;
+            margin: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #222;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            box-sizing: border-box;
+        }
+        
+        .volume-control label {
+            margin-right: 8px;
+            color: #c0c0c0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .volume-control input[type="range"] {
+            -webkit-appearance: none;
+            width: 100px;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .volume-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #c0c0c0;
+            cursor: pointer;
+        }
+        
+        .volume-control input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #c0c0c0;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .volume-control span {
+            margin-left: 8px;
+            color: #c0c0c0;
+            font-family: 'Courier New', monospace;
+            width: 40px;
+            text-align: right;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+                width: 98%;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .ascii-toggle,
+            .char-set-selector,
+            .volume-control {
+                width: 100%;
+                max-width: none;
+                margin: 5px 0;
+            }
+            .controls-info {
+                font-size: 14px;
+            }
+            .log-container {
+                height: 100px;
+            }
+            .score-display {
+                font-size: 20px;
+            }
+            .high-score {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="ascii-title">
+  _____   _____   _____   _   _        _____  _       _____   _____   _____  __   __
+ |  _  | |  ___| |  ___| | | | |      |  ___|| |     |  _  | |  _  | |  _  | \ \ / /
+ | |_| | | |___  | |     | | | |      | |___ | |     | |_| | | |_| | | |_| |  \ V / 
+ |  _  | |___  | | |     | | | |      |  ___|| |     |  _  | |  ___| |  ___|   \ /  
+ | | | |  ___| | | |___  | | | |      | |    | |___  | | | | | |     | |       | |  
+ |_| |_| |_____| |_____| |_| |_|      |_|    |_____| |_| |_| |_|     |_|       |_|  
+        </div>
+        
+        <div class="score-display">Score: <span id="score">0</span></div>
+        <div class="high-score">High Score: <span id="high-score">0</span></div>
+        <div class="game-over-message" id="game-over-message">GAME OVER - Press Space to restart</div>
+        
+        <div class="fps-counter">FPS: <span id="fps-counter">0</span></div>
+        
+        <canvas id="canvas" width="800" height="600"></canvas>
+        
+        <!-- WebGL error message -->
+        <div id="webgl-error" class="error-message" style="display: none; color: #ff5555; margin: 20px 0; padding: 15px; border: 1px solid #ff3333; background-color: #330000; border-radius: 5px;">
+            <h3 style="margin-top: 0;">WebGL Not Supported</h3>
+            <p>Your browser does not support WebGL, which is required to run this game.</p>
+            <p>Please try using a modern browser like Chrome, Firefox, or Edge.</p>
+        </div>
+        
+        <div class="controls">
+            <button id="start-button">Start Game</button>
+            <button id="pause-button">Pause</button>
+            <div class="ascii-toggle">
+                <label for="ascii-toggle-checkbox">ASCII Mode:</label>
+                <input type="checkbox" id="ascii-toggle-checkbox" checked>
+            </div>
+            <div class="char-set-selector">
+                <label for="char-set-select">Character Set:</label>
+                <select id="char-set-select">
+                    <option value="0">Default ASCII</option>
+                    <option value="1">Block Characters</option>
+                    <option value="2">Full Character Set</option>
+                </select>
+            </div>
+            <div class="volume-control">
+                <label for="volume-slider">Volume:</label>
+                <input type="range" id="volume-slider" min="0" max="100" value="70">
+                <span id="volume-value">70%</span>
+            </div>
+        </div>
+        
+        <button id="jump-button" class="jump-button">JUMP (Space)</button>
+        
+        <div class="status">
+            <p id="status">WASM module loading...</p>
+        </div>
+        
+        <div class="controls-info">
+            <h3>Controls</h3>
+            <ul>
+                <li>Space: Jump</li>
+                <li>Click/Tap: Jump</li>
+                <li>P: Pause/Resume</li>
+                <li>A: Toggle ASCII Mode</li>
+                <li>C: Cycle Character Sets</li>
+            </ul>
+        </div>
+        
+        <div class="log-toggle" id="log-toggle">
+            <span>Console Output</span>
+            <span class="log-toggle-icon">▼</span>
+        </div>
+        
+        <div class="log-container" id="log-container">
+            <div class="log-entry">Console output will appear here...</div>
+        </div>
+    </div>
+
+    <!-- WebGL utilities -->
+    <script src="webgl.js"></script>
+    
+    <script>
+        // DOM elements
+        const canvas = document.getElementById('canvas');
+        const statusElement = document.getElementById('status');
+        const logContainer = document.getElementById('log-container');
+        const startButton = document.getElementById('start-button');
+        const pauseButton = document.getElementById('pause-button');
+        const jumpButton = document.getElementById('jump-button');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('high-score');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const webglErrorElement = document.getElementById('webgl-error');
+        const asciiToggleCheckbox = document.getElementById('ascii-toggle-checkbox');
+        const charSetSelect = document.getElementById('char-set-select');
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeValue = document.getElementById('volume-value');
+        const fpsCounter = document.getElementById('fps-counter');
+        
+        // Game state
+        let score = 0;
+        let highScore = 0;
+        let masterVolume = 0.7; // Default volume (70%)
+        
+        // FPS tracking
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
+        let currentFps = 0;
+        
+        // Update volume display and set master volume
+        volumeSlider.addEventListener('input', function() {
+            const volume = this.value;
+            volumeValue.textContent = volume + '%';
+            masterVolume = volume / 100;
+            
+            // Update audio context gain if available
+            if (gainNode) {
+                gainNode.gain.value = masterVolume;
+            }
+        });
+        
+        // Audio system with volume control
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffers = {};
+        let gainNode = null;
+        
+        // Create gain node for volume control
+        try {
+            gainNode = audioContext.createGain();
+            gainNode.gain.value = masterVolume;
+            gainNode.connect(audioContext.destination);
+        } catch (e) {
+            console.error('Error creating gain node:', e);
+        }
+        
+        const audioFiles = [
+            { name: 'jump', path: 'audio/jump.ogg' },
+            { name: 'explode', path: 'audio/explode.ogg' },
+            { name: 'failure', path: 'audio/failure.ogg' }
+        ];
+        
+        // Preload all audio files
+        async function preloadAudio() {
+            try {
+                const loadPromises = audioFiles.map(async (file) => {
+                    const response = await fetch(file.path);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    audioBuffers[file.name] = audioBuffer;
+                    console.log(`Loaded audio: ${file.name}`);
+                });
+                
+                await Promise.all(loadPromises);
+                console.log('All audio files loaded successfully');
+            } catch (error) {
+                console.error('Error loading audio files:', error);
+            }
+        }
+        
+        // Function to play sound from buffer with volume control
+        function playSound(soundName) {
+            if (audioBuffers[soundName]) {
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffers[soundName];
+                
+                // Connect through gain node for volume control if available
+                if (gainNode) {
+                    source.connect(gainNode);
+                } else {
+                    source.connect(audioContext.destination);
+                }
+                
+                source.start(0);
+            }
+        }
+        
+        // WASM module reference
+        let zigModule = null;
+        
+        // Animation state
+        let animationFrameId = null;
+        let lastTimestamp = 0;
+        let isPaused = false;
+        
+        // Check WebGL support and initialize if available
+        function checkWebGLSupport() {
+            if (!window.AsciiFlappyWebGL || !window.AsciiFlappyWebGL.isSupported()) {
+                // WebGL is not supported
+                webglErrorElement.style.display = 'block';
+                canvas.style.display = 'none';
+                startButton.disabled = true;
+                pauseButton.disabled = true;
+                jumpButton.disabled = true;
+                statusElement.textContent = "Error: WebGL is not supported by your browser";
+                addLogEntry("WebGL is not supported by your browser");
+                return false;
+            }
+            return true;
+        }
+        
+        // Initialize WebGL
+        function initializeWebGL() {
+            // Get the canvas element
+            const canvas = document.getElementById('canvas');
+            
+            // Initialize WebGL
+            if (!window.AsciiFlappyWebGL.init(canvas)) {
+                console.error('Failed to initialize WebGL');
+                addLogEntry("WebGL initialization failed");
+                statusElement.textContent = "Error: WebGL initialization failed";
+                webglErrorElement.style.display = 'block';
+                canvas.style.display = 'none';
+                startButton.disabled = true;
+                pauseButton.disabled = true;
+                jumpButton.disabled = true;
+                return false;
+            }
+            
+            addLogEntry("WebGL initialized successfully");
+            return true;
+        }
+        
+        // Define imports globally so it can be accessed from all functions
+        const imports = {
+            env: {
+                consoleLog: (ptr, len) => {
+                    const buffer = new Uint8Array(zigModule.memory.buffer);
+                    const message = new TextDecoder().decode(buffer.subarray(ptr, ptr + len));
+                    console.log(message);
+                    addLogEntry(message);
+                    
+                    // Update score display if the message contains score information
+                    if (message.startsWith('Score:')) {
+                        const scoreMatch = message.match(/Score: (\d+)/);
+                        if (scoreMatch && scoreMatch[1]) {
+                            score = parseInt(scoreMatch[1]);
+                            scoreElement.textContent = score;
+                        }
+                    }
+                    
+                    // Update game over message
+                    if (message === 'Game Over!') {
+                        gameOverMessage.classList.add('visible');
+                        if (score > highScore) {
+                            highScore = score;
+                            highScoreElement.textContent = highScore;
+                        }
+                        
+                        // For game over, we want to stop the animation loop completely
+                        // after rendering the final frame
+                        if (animationFrameId) {
+                            cancelAnimationFrame(animationFrameId);
+                            animationFrameId = null;
+                            
+                            // Render one final frame to ensure the game over state is displayed correctly
+                            if (zigModule && typeof zigModule.update === 'function') {
+                                zigModule.update(0);
+                            }
+                        }
+                    }
+                },
+                clearCanvas: () => {
+                    // WebGL clearing is handled in the render function
+                },
+                // WebGL function bindings
+                glTexImage2D: (target, level, internalformat, width, height, border, format, type, pixels) => {
+                    // Make sure gl is initialized
+                    if (!gl) return;
+                    
+                    // Get the data from WASM memory
+                    const buffer = new Uint8Array(zigModule.memory.buffer);
+                    const frameData = buffer.subarray(pixels, pixels + width * height * 3);
+                    
+                    // Map Zig WebGL constants to JavaScript WebGL constants
+                    const targetMap = {
+                        [window.AsciiFlappyWebGL.GL_TEXTURE_2D]: gl.TEXTURE_2D // GL_TEXTURE_2D
+                    };
+                    
+                    const formatMap = {
+                        [window.AsciiFlappyWebGL.GL_RGB]: gl.RGB // GL_RGB
+                    };
+                    
+                    const typeMap = {
+                        [window.AsciiFlappyWebGL.GL_UNSIGNED_BYTE]: gl.UNSIGNED_BYTE // GL_UNSIGNED_BYTE
+                    };
+                    
+                    // Upload texture data
+                    gl.bindTexture(gl.TEXTURE_2D, texture);
+                    gl.texImage2D(
+                        targetMap[target] || target,
+                        level,
+                        formatMap[internalformat] || internalformat,
+                        width,
+                        height,
+                        border,
+                        formatMap[format] || format,
+                        typeMap[type] || type,
+                        frameData
+                    );
+                },
+                glDrawArrays: (mode, first, count) => {
+                    // Make sure gl is initialized
+                    if (!gl) return;
+                    
+                    // Map Zig WebGL constants to JavaScript WebGL constants
+                    const modeMap = {
+                        [window.AsciiFlappyWebGL.GL_TRIANGLE_STRIP]: gl.TRIANGLE_STRIP // GL_TRIANGLE_STRIP
+                    };
+                    
+                    // Draw the quad
+                    gl.drawArrays(modeMap[mode] || mode, first, count);
+                },
+                // Audio functions
+                playJumpSound: () => {
+                    playSound('jump');
+                },
+                playExplodeSound: () => {
+                    playSound('explode');
+                },
+                playFailSound: () => {
+                    playSound('failure');
+                },
+                executeBatchedCommands: (cmdPtr, width, height) => {
+                    window.AsciiFlappyWebGL.executeBatch(cmdPtr, width, height, zigModule.memory);
+                }
+            }
+        };
+        
+        // Animation loop function - define it before using it
+        function animate(timestamp) {
+            // If we're in game over state, don't continue the animation loop
+            if (gameOverMessage.classList.contains('visible')) {
+                animationFrameId = null;
+                return;
+            }
+            
+            // FPS calculation
+            frameCount++;
+            if (timestamp - lastFpsUpdate >= 1000) { // Update every second
+                currentFps = Math.round((frameCount * 1000) / (timestamp - lastFpsUpdate));
+                fpsCounter.textContent = currentFps;
+                frameCount = 0;
+                lastFpsUpdate = timestamp;
+            }
+            
+            // If paused, don't update game logic but still render the current frame
+            if (isPaused) {
+                // Call update with 0 delta time to just render the current state
+                if (zigModule && typeof zigModule.update === 'function') {
+                    zigModule.update(0);
+                }
+                
+                // Request next frame only if we're paused but not in game over
+                if (!gameOverMessage.classList.contains('visible')) {
+                    animationFrameId = requestAnimationFrame(animate);
+                } else {
+                    animationFrameId = null;
+                }
+                return;
+            }
+            
+            // Calculate delta time in seconds
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const deltaTime = Math.min((timestamp - lastTimestamp) / 1000, 0.1); // Cap delta time to avoid large jumps
+            lastTimestamp = timestamp;
+            
+            // Call WASM update function
+            zigModule.update(deltaTime);
+            
+            // Request next frame
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        
+        // Start animation loop
+        function startAnimationLoop() {
+            // Start the animation loop
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        
+        // Add log entry to the log container
+        function addLogEntry(message) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = message;
+            logContainer.appendChild(entry);
+            
+            // Auto-scroll to bottom
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Limit number of entries
+            while (logContainer.children.length > 100) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+        
+        // Handle jump action
+        function handleJump() {
+            if (!zigModule) return;
+            
+            // Call WASM function to handle jump
+            if (typeof zigModule.handleJump === 'function') {
+                zigModule.handleJump();
+                
+                // Hide game over message when starting a new game
+                gameOverMessage.classList.remove('visible');
+            }
+        }
+        
+        // Handle canvas click
+        function handleCanvasClick(event) {
+            if (!zigModule || isPaused) return;
+            
+            // Call WASM function to handle click
+            if (typeof zigModule.handleClick === 'function') {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                zigModule.handleClick(x, y);
+                
+                // Hide game over message when starting a new game
+                gameOverMessage.classList.remove('visible');
+            }
+        }
+        
+        // Start the game
+        function startGame() {
+            if (!zigModule) return;
+            
+            // Reset game state if needed
+            if (typeof zigModule.resetGame === 'function') {
+                zigModule.resetGame();
+                
+                // Reset score display
+                score = 0;
+                scoreElement.textContent = '0';
+                
+                // Hide game over message
+                gameOverMessage.classList.remove('visible');
+            }
+            
+            isPaused = false;
+            lastTimestamp = 0; // Reset timestamp to avoid large delta on first frame
+            statusElement.textContent = "Game started";
+            
+            // Start animation loop if not already running
+            if (!animationFrameId) {
+                startAnimationLoop();
+            }
+        }
+        
+        // Toggle pause state
+        function togglePause() {
+            if (!zigModule) return;
+            
+            isPaused = !isPaused;
+            statusElement.textContent = isPaused ? "Game paused" : "Game resumed";
+            
+            // Call WASM function to toggle pause
+            if (typeof zigModule.togglePause === 'function') {
+                zigModule.togglePause();
+            }
+            
+            if (!isPaused && !animationFrameId) {
+                startAnimationLoop();
+            }
+        }
+        
+        // Initialize WebAssembly module
+        async function initWasm() {
+            try {
+                statusElement.textContent = "Loading audio and WASM module...";
+                
+                // Initialize WebGL
+                if (!initializeWebGL()) {
+                    return; // Stop initialization if WebGL initialization fails
+                }
+                
+                // Add resize handler for responsive canvas
+                function handleResize() {
+                    const container = document.querySelector('.container');
+                    const containerWidth = container.clientWidth - 40; // Account for padding
+                    const aspectRatio = 4/3; // Maintain 4:3 aspect ratio
+                    
+                    // Calculate new dimensions while maintaining aspect ratio
+                    let newWidth = Math.min(containerWidth, 800); // Max width of 800px
+                    let newHeight = newWidth / aspectRatio;
+                    
+                    // Update canvas size
+                    canvas.style.width = `${newWidth}px`;
+                    canvas.style.height = `${newHeight}px`;
+                    
+                    // Keep the internal resolution the same
+                    canvas.width = 800;
+                    canvas.height = 600;
+                }
+                
+                // Call resize handler initially and add event listener
+                handleResize();
+                window.addEventListener('resize', handleResize);
+                
+                // First preload all audio files
+                await preloadAudio();
+                
+                // Then load the WASM file
+                const wasmUrl = 'flapper.wasm';
+                
+                const response = await fetch(wasmUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch WASM: ${response.statusText}`);
+                }
+                
+                const wasmBytes = await response.arrayBuffer();
+                
+                // Instantiate the WebAssembly module
+                const { instance } = await WebAssembly.instantiate(wasmBytes, imports);
+                zigModule = instance.exports;
+                
+                // Initialize the WASM module
+                zigModule.init();
+                
+                // Update status
+                statusElement.textContent = "WASM module loaded successfully";
+                
+                // Add click event listener to canvas
+                canvas.addEventListener('click', handleCanvasClick);
+                
+                // Add button event listeners
+                startButton.addEventListener('click', startGame);
+                pauseButton.addEventListener('click', togglePause);
+                jumpButton.addEventListener('click', handleJump);
+                
+                // Add keyboard event listener
+                window.addEventListener('keydown', (event) => {
+                    if (!zigModule) return;
+                    
+                    switch(event.key) {
+                        case ' ': // Space bar
+                            event.preventDefault();
+                            handleJump();
+                            break;
+                        case 'p': // P key
+                        case 'P':
+                            event.preventDefault();
+                            togglePause();
+                            break;
+                        case 'a': // A key for ASCII toggle
+                        case 'A':
+                            event.preventDefault();
+                            asciiToggleCheckbox.checked = !asciiToggleCheckbox.checked;
+                            toggleAsciiRendering();
+                            break;
+                        case 'c': // C key for cycling through character sets
+                        case 'C':
+                            event.preventDefault();
+                            if (asciiToggleCheckbox.checked) {
+                                // Cycle through character sets
+                                const nextIndex = (parseInt(charSetSelect.value) + 1) % 3;
+                                charSetSelect.value = nextIndex.toString();
+                                changeCharacterSet();
+                            }
+                            break;
+                    }
+                });
+                
+                // ASCII toggle event listener
+                asciiToggleCheckbox.addEventListener('change', toggleAsciiRendering);
+                
+                // Character set selector event listener
+                charSetSelect.addEventListener('change', changeCharacterSet);
+                
+                // Function to toggle ASCII rendering
+                function toggleAsciiRendering() {
+                    if (!zigModule || typeof zigModule.setUseAscii !== 'function') return;
+                    
+                    const useAscii = asciiToggleCheckbox.checked;
+                    zigModule.setUseAscii(useAscii);
+                    
+                    statusElement.textContent = useAscii ? 
+                        "ASCII rendering enabled" : 
+                        "ASCII rendering disabled";
+                    
+                    addLogEntry(useAscii ? 
+                        "Switched to ASCII rendering mode" : 
+                        "Switched to normal rendering mode");
+                    
+                    // Disable character set selector if ASCII is disabled
+                    charSetSelect.disabled = !useAscii;
+                }
+                
+                // Function to change character set
+                function changeCharacterSet() {
+                    if (!zigModule || typeof zigModule.setCharacterSet !== 'function') return;
+                    
+                    const setIndex = parseInt(charSetSelect.value);
+                    zigModule.setCharacterSet(setIndex);
+                    
+                    const setNames = ["Default ASCII", "Block Characters", "Full Character Set"];
+                    const setName = setNames[setIndex] || "Unknown";
+                    
+                    statusElement.textContent = `Character set changed to: ${setName}`;
+                    addLogEntry(`Changed character set to: ${setName}`);
+                }
+                
+                // Touch events for mobile
+                jumpButton.addEventListener('touchstart', (event) => {
+                    event.preventDefault();
+                    handleJump();
+                });
+                
+                // Start the game loop
+                startAnimationLoop();
+                
+            } catch (error) {
+                statusElement.textContent = `Error: ${error.message}`;
+                console.error("Initialization error:", error);
+                
+                // Add retry button
+                const retryButton = document.createElement('button');
+                retryButton.textContent = 'Retry Loading';
+                retryButton.onclick = () => {
+                    statusElement.textContent = '';
+                    retryButton.remove();
+                    initWasm();
+                };
+                statusElement.appendChild(retryButton);
+            }
+        }
+        
+        // Initialize the application
+        window.addEventListener('load', () => {
+            // Check WebGL support first
+            if (!checkWebGLSupport()) {
+                statusElement.textContent = "Error: WebGL is not supported by your browser";
+                return; // Stop initialization if WebGL is not supported
+            }
+            
+            // Continue with WASM initialization
+            initWasm();
+        });
+        
+        // Add log toggle functionality
+        const logToggle = document.getElementById('log-toggle');
+        
+        logToggle.addEventListener('click', () => {
+            logContainer.classList.toggle('hidden');
+            logToggle.classList.toggle('collapsed');
+        });
+        
+        // Clean up resources when the page is unloaded
+        window.addEventListener('beforeunload', () => {
+            if (zigModule && typeof zigModule.deinit === 'function') {
+                zigModule.deinit();
+            }
+        });
+    </script>
+</body>
+</html>

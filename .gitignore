@@ -1,0 +1,73 @@
+# Zig build artifacts
+.zig-cache/
+zig-out/
+build/
+build-*/
+www/
+http-zerver-tmp/
+http-zerver
+
+# Binaries
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# Custom build output
+/output/
+/dist/
+
+# Dependency directories (if you decide to use any package managers in the future)
+/node_modules/
+/jspm_packages/
+
+# Optional: Uncomment if you're using CMake for any part of the project
+# CMakeLists.txt.user
+# CMakeCache.txt
+# CMakeFiles
+# CMakeScripts
+# Testing
+# Makefile
+# cmake_install.cmake
+# install_manifest.txt
+# compile_commands.json
+# CTestTestfile.cmake
+# _deps
