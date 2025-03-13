@@ -23,7 +23,7 @@ pub const Game = struct {
     random_seed: u32,
     // Rendering resources
     game_image: renderer.Image,
-    command_buffer: renderer.CommandBuffer,
+    game_renderer: renderer.Renderer,
     // Audio system
     audio_system: audio.AudioSystem,
     // Performance optimization timers
@@ -35,8 +35,8 @@ pub const Game = struct {
         // Create game image buffer
         const game_image = try renderer.Image.init(alloc, entities.GAME_WIDTH, entities.GAME_HEIGHT, 3);
 
-        // Initialize command buffer for batched WebGL calls
-        const command_buffer = try renderer.CommandBuffer.init(alloc, 10); // Capacity for 10 commands
+        // Initialize renderer
+        const game_renderer = try renderer.Renderer.init(alloc);
 
         // Initialize audio system
         const audio_system = audio.AudioSystem.init();
@@ -52,7 +52,7 @@ pub const Game = struct {
             .high_score = 0,
             .random_seed = 12345,
             .game_image = game_image,
-            .command_buffer = command_buffer,
+            .game_renderer = game_renderer,
             .audio_system = audio_system,
             .menu_render_timer = 0,
             .pause_render_timer = 0,
@@ -204,8 +204,8 @@ pub const Game = struct {
     }
 
     pub fn render(self: *Game) void {
-        // Clear the command buffer
-        self.command_buffer.reset();
+        // Begin a new frame
+        self.game_renderer.beginFrame();
 
         if (self.state == GameState.Menu) {
             if (self.menu_render_timer >= 0.1) { // Redraw menu at 10 FPS
@@ -226,8 +226,8 @@ pub const Game = struct {
             self.renderGame();
         }
 
-        // Execute the batched commands
-        renderer.renderFrame(&self.command_buffer, self.game_image);
+        // End the frame and render it
+        self.game_renderer.endFrame(self.game_image);
     }
 
     fn renderGame(self: *Game) void {
@@ -235,18 +235,18 @@ pub const Game = struct {
         self.game_image.clear(.{ 135, 206, 235 }); // Sky blue
 
         // Draw ground
-        renderer.drawRect(self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 50, .{ 83, 54, 10 });
+        self.game_renderer.renderRect(&self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 50, .{ 83, 54, 10 });
 
         // Draw grass
-        renderer.drawRect(self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 5, .{ 34, 139, 34 });
+        self.game_renderer.renderRect(&self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 5, .{ 34, 139, 34 });
 
         // Draw pipes
         for (self.pipes[0..self.pipe_count]) |*pipe| {
-            pipe.render(&self.game_image);
+            pipe.renderWithRenderer(&self.game_renderer, &self.game_image);
         }
 
         // Draw bird
-        self.bird.render(&self.game_image);
+        self.bird.renderWithRenderer(&self.game_renderer, &self.game_image);
     }
 
     fn renderMenu(self: *Game) void {
@@ -254,13 +254,13 @@ pub const Game = struct {
         self.game_image.clear(.{ 135, 206, 235 }); // Sky blue
 
         // Draw ground
-        renderer.drawRect(self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 50, .{ 83, 54, 10 });
+        self.game_renderer.renderRect(&self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 50, .{ 83, 54, 10 });
 
         // Draw grass
-        renderer.drawRect(self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 5, .{ 34, 139, 34 });
+        self.game_renderer.renderRect(&self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 5, .{ 34, 139, 34 });
 
         // Draw a sample bird in the center
-        renderer.drawCircle(self.game_image, entities.GAME_WIDTH / 2, entities.GAME_HEIGHT / 2, @intFromFloat(entities.BIRD_SIZE / 2), .{ 255, 255, 0 });
+        self.game_renderer.renderCircle(&self.game_image, entities.GAME_WIDTH / 2, entities.GAME_HEIGHT / 2, @intFromFloat(entities.BIRD_SIZE / 2), .{ 255, 255, 0 });
     }
 
     pub fn handleJump(self: *Game) void {
@@ -308,6 +308,6 @@ pub const Game = struct {
     pub fn deinit(self: *Game, alloc: std.mem.Allocator) void {
         // Free allocated resources
         self.game_image.deinit(alloc);
-        self.command_buffer.deinit(alloc);
+        self.game_renderer.deinit(alloc);
     }
 };

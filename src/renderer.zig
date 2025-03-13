@@ -208,22 +208,22 @@ pub const Renderer = struct {
         executeBatchedCommands(self.command_buffer.getBufferPtr(), @intCast(img.width), @intCast(img.height));
     }
 
-    /// Draw a pixel
-    pub fn drawPixel(self: *Renderer, img: *Image, x: usize, y: usize, color: [3]u8) void {
+    /// Draw a pixel using the renderer
+    pub fn renderPixel(self: *Renderer, img: *Image, x: usize, y: usize, color: [3]u8) void {
         _ = self; // Unused for now
-        @This().drawPixel(img.*, x, y, color);
+        drawPixel(img.*, x, y, color);
     }
 
-    /// Draw a rectangle
-    pub fn drawRect(self: *Renderer, img: *Image, x: usize, y: usize, width: usize, height: usize, color: [3]u8) void {
+    /// Draw a rectangle using the renderer
+    pub fn renderRect(self: *Renderer, img: *Image, x: usize, y: usize, width: usize, height: usize, color: [3]u8) void {
         _ = self; // Unused for now
-        @This().drawRect(img.*, x, y, width, height, color);
+        drawRect(img.*, x, y, width, height, color);
     }
 
-    /// Draw a circle
-    pub fn drawCircle(self: *Renderer, img: *Image, center_x: usize, center_y: usize, radius: usize, color: [3]u8) void {
+    /// Draw a circle using the renderer
+    pub fn renderCircle(self: *Renderer, img: *Image, center_x: usize, center_y: usize, radius: usize, color: [3]u8) void {
         _ = self; // Unused for now
-        @This().drawCircle(img.*, center_x, center_y, radius, color);
+        drawCircle(img.*, center_x, center_y, radius, color);
     }
 };
 
