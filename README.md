@@ -5,11 +5,12 @@ A modern, high-performance game development template using Zig, WebAssembly, and
 ## Features
 
 - **WebAssembly Integration**: Compile Zig code to WebAssembly for near-native performance in the browser
-- **WebGL Rendering**: Hardware-accelerated graphics with a simple but powerful abstraction layer
+- **WebGL Rendering**: Clean, efficient hardware-accelerated graphics with a command buffer system
 - **Memory-Safe Architecture**: Leverages Zig's memory safety features for robust game development
 - **Optimized Build Pipeline**: Streamlined build process with development server included
 - **Cross-Platform**: Works on any modern browser that supports WebAssembly and WebGL
 - **Responsive Design**: Adapts to different screen sizes and device capabilities
+- **Minimal JS-WASM Boundary**: Optimized communication between JavaScript and WebAssembly
 
 ## Getting Started
 
@@ -57,23 +58,23 @@ The template uses WebAssembly to run Zig code in the browser with near-native pe
    - Improves startup time and initial frame rates
 
 2. **JavaScript-Zig Interop**
-   - Clean interface between JavaScript and WebAssembly
-   - Minimizes boundary crossing overhead
-   - Provides simple exported functions for game lifecycle management
+   - Minimal interface between JavaScript and WebAssembly
+   - Efficient command buffer system for batched operations
+   - Simple exported functions for game lifecycle management
 
 ### Rendering Pipeline
 
-The rendering system is designed for flexibility and performance:
+The rendering system is designed for simplicity and performance:
 
 1. **WebGL Acceleration**
-   - Hardware-accelerated rendering through WebGL
+   - Direct hardware-accelerated rendering through WebGL
    - Efficient texture management
-   - Optimized draw calls
+   - Optimized command buffer for batched draw calls
 
 2. **Batched Rendering**
-   - Groups related rendering operations
-   - Minimizes state changes
-   - Reduces CPU overhead
+   - Command buffer system for grouping WebGL operations
+   - Minimizes state changes and JS-WASM boundary crossings
+   - Reduces CPU overhead and improves frame rates
 
 ### Memory Management
 
@@ -168,7 +169,8 @@ const customVertexShader = `
 
 ## Roadmap for Template Improvement
 
-- [ ] Add WebGPU support as an alternative to WebGL
+- [ ] Switch to WebGPU in next template
+- [ ] Add optional ASCII rendering mode for retro-style games
 - [ ] Implement asset loading and management system
 - [ ] Add physics integration options
 - [ ] Create component-based game architecture
