@@ -1,5 +1,3 @@
-const std = @import("std");
-
 // Include audio data directly in the WASM module
 const jump_audio = @embedFile("assets/audio/jump.ogg");
 const explode_audio = @embedFile("assets/audio/explode.ogg");
