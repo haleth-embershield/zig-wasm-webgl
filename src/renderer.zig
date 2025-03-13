@@ -174,7 +174,60 @@ extern fn consoleLog(ptr: [*]const u8, len: usize) void;
 /// WebGL batched command execution function
 extern "env" fn executeBatchedCommands(cmd_ptr: [*]u32, width: u32, height: u32) void;
 
-/// Render a frame with WebGL support using batched commands
+/// Formal Renderer struct to encapsulate rendering functionality
+pub const Renderer = struct {
+    command_buffer: CommandBuffer,
+
+    /// Initialize a new renderer
+    pub fn init(allocator: std.mem.Allocator) !Renderer {
+        const command_buffer = try CommandBuffer.init(allocator, 10);
+        return Renderer{
+            .command_buffer = command_buffer,
+        };
+    }
+
+    /// Free resources used by the renderer
+    pub fn deinit(self: *Renderer, allocator: std.mem.Allocator) void {
+        self.command_buffer.deinit(allocator);
+    }
+
+    /// Begin a new frame
+    pub fn beginFrame(self: *Renderer) void {
+        self.command_buffer.reset();
+    }
+
+    /// End the current frame and render it
+    pub fn endFrame(self: *Renderer, img: Image) void {
+        // Add texture upload command
+        self.command_buffer.addTextureCommand(img.data.ptr);
+
+        // Add draw command
+        self.command_buffer.addDrawCommand();
+
+        // Execute the batched commands
+        executeBatchedCommands(self.command_buffer.getBufferPtr(), @intCast(img.width), @intCast(img.height));
+    }
+
+    /// Draw a pixel
+    pub fn drawPixel(self: *Renderer, img: *Image, x: usize, y: usize, color: [3]u8) void {
+        _ = self; // Unused for now
+        @This().drawPixel(img.*, x, y, color);
+    }
+
+    /// Draw a rectangle
+    pub fn drawRect(self: *Renderer, img: *Image, x: usize, y: usize, width: usize, height: usize, color: [3]u8) void {
+        _ = self; // Unused for now
+        @This().drawRect(img.*, x, y, width, height, color);
+    }
+
+    /// Draw a circle
+    pub fn drawCircle(self: *Renderer, img: *Image, center_x: usize, center_y: usize, radius: usize, color: [3]u8) void {
+        _ = self; // Unused for now
+        @This().drawCircle(img.*, center_x, center_y, radius, color);
+    }
+};
+
+/// Render a frame with WebGL support using batched commands (legacy function for compatibility)
 pub fn renderFrame(cmd_buffer: *CommandBuffer, img: Image) void {
     // Reset the command buffer
     cmd_buffer.reset();
