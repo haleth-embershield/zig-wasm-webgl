@@ -24,7 +24,7 @@ export fn init() void {
     allocator = std.heap.page_allocator;
 
     // Initialize game data
-    game = game_mod.Game.init(allocator) catch {
+    game = game_mod.Game.init(allocator, entities.GAME_WIDTH, entities.GAME_HEIGHT) catch {
         logString("Failed to initialize game");
         return;
     };
@@ -41,7 +41,6 @@ export fn resetGame() void {
 // Update animation frame
 export fn update(delta_time: f32) void {
     game.update(delta_time);
-    game.render();
 }
 
 // Handle jump (spacebar or click)

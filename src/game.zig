@@ -22,8 +22,7 @@ pub const Game = struct {
     high_score: u32,
     random_seed: u32,
     // Rendering resources
-    game_image: renderer.Image,
-    game_renderer: renderer.Renderer,
+    renderer: renderer.Renderer,
     // Audio system
     audio_system: audio.AudioSystem,
     // Performance optimization timers
@@ -31,12 +30,9 @@ pub const Game = struct {
     pause_render_timer: f32,
     gameover_render_timer: f32,
 
-    pub fn init(alloc: std.mem.Allocator) !Game {
-        // Create game image buffer
-        const game_image = try renderer.Image.init(alloc, entities.GAME_WIDTH, entities.GAME_HEIGHT, 3);
-
+    pub fn init(alloc: std.mem.Allocator, width: usize, height: usize) !Game {
         // Initialize renderer
-        const game_renderer = try renderer.Renderer.init(alloc);
+        const game_renderer = try renderer.Renderer.init(alloc, width, height);
 
         // Initialize audio system
         const audio_system = audio.AudioSystem.init();
@@ -51,8 +47,7 @@ pub const Game = struct {
             .score = 0,
             .high_score = 0,
             .random_seed = 12345,
-            .game_image = game_image,
-            .game_renderer = game_renderer,
+            .renderer = game_renderer,
             .audio_system = audio_system,
             .menu_render_timer = 0,
             .pause_render_timer = 0,
@@ -132,6 +127,7 @@ pub const Game = struct {
         if (self.state == GameState.Menu) {
             // Only redraw menu occasionally to save performance
             self.menu_render_timer += capped_delta;
+            self.renderMenu();
             return;
         }
 
@@ -139,8 +135,16 @@ pub const Game = struct {
             // Update timers for other states
             if (self.state == GameState.GameOver) {
                 self.gameover_render_timer += capped_delta;
+                if (self.gameover_render_timer >= 0.2) { // Redraw at 5 FPS
+                    self.gameover_render_timer = 0;
+                    self.renderGame();
+                }
             } else if (self.state == GameState.Paused) {
                 self.pause_render_timer += capped_delta;
+                if (self.pause_render_timer >= 0.5) { // Redraw at 2 FPS
+                    self.pause_render_timer = 0;
+                    self.renderGame();
+                }
             }
             return;
         }
@@ -189,6 +193,9 @@ pub const Game = struct {
                 i += 1;
             }
         }
+
+        // Render the current frame
+        self.renderGame();
     }
 
     fn gameOver(self: *Game) void {
@@ -203,64 +210,46 @@ pub const Game = struct {
         }
     }
 
-    pub fn render(self: *Game) void {
-        // Begin a new frame
-        self.game_renderer.beginFrame();
-
-        if (self.state == GameState.Menu) {
-            if (self.menu_render_timer >= 0.1) { // Redraw menu at 10 FPS
-                self.renderMenu();
-            }
-        } else if (self.state == GameState.GameOver) {
-            if (self.gameover_render_timer >= 0.2) { // Redraw at 5 FPS
-                self.gameover_render_timer = 0;
-                self.renderGame();
-            }
-        } else if (self.state == GameState.Paused) {
-            if (self.pause_render_timer >= 0.5) { // Redraw at 2 FPS
-                self.pause_render_timer = 0;
-                self.renderGame();
-            }
-        } else {
-            // Always render when playing
-            self.renderGame();
-        }
-
-        // End the frame and render it
-        self.game_renderer.endFrame(self.game_image);
-    }
-
     fn renderGame(self: *Game) void {
-        // Clear the image
-        self.game_image.clear(.{ 135, 206, 235 }); // Sky blue
+        // Clear the screen with sky blue
+        self.renderer.beginFrame(.{ 135, 206, 235 });
 
         // Draw ground
-        self.game_renderer.renderRect(&self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 50, .{ 83, 54, 10 });
+        self.renderer.drawRect(0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 50, .{ 83, 54, 10 });
 
         // Draw grass
-        self.game_renderer.renderRect(&self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 5, .{ 34, 139, 34 });
+        self.renderer.drawRect(0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 5, .{ 34, 139, 34 });
 
         // Draw pipes
         for (self.pipes[0..self.pipe_count]) |*pipe| {
-            pipe.renderWithRenderer(&self.game_renderer, &self.game_image);
+            pipe.render(&self.renderer);
         }
 
         // Draw bird
-        self.bird.renderWithRenderer(&self.game_renderer, &self.game_image);
+        self.bird.render(&self.renderer);
+
+        // End frame
+        self.renderer.endFrame();
     }
 
     fn renderMenu(self: *Game) void {
-        // Clear the image
-        self.game_image.clear(.{ 135, 206, 235 }); // Sky blue
+        if (self.menu_render_timer < 0.1) return; // Redraw menu at 10 FPS
+        self.menu_render_timer = 0;
+
+        // Clear the screen with sky blue
+        self.renderer.beginFrame(.{ 135, 206, 235 });
 
         // Draw ground
-        self.game_renderer.renderRect(&self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 50, .{ 83, 54, 10 });
+        self.renderer.drawRect(0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 50, .{ 83, 54, 10 });
 
         // Draw grass
-        self.game_renderer.renderRect(&self.game_image, 0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 5, .{ 34, 139, 34 });
+        self.renderer.drawRect(0, entities.GAME_HEIGHT - 50, entities.GAME_WIDTH, 5, .{ 34, 139, 34 });
 
         // Draw a sample bird in the center
-        self.game_renderer.renderCircle(&self.game_image, entities.GAME_WIDTH / 2, entities.GAME_HEIGHT / 2, @intFromFloat(entities.BIRD_SIZE / 2), .{ 255, 255, 0 });
+        self.renderer.drawCircle(entities.GAME_WIDTH / 2, entities.GAME_HEIGHT / 2, @intFromFloat(entities.BIRD_SIZE / 2), .{ 255, 255, 0 });
+
+        // End frame
+        self.renderer.endFrame();
     }
 
     pub fn handleJump(self: *Game) void {
@@ -306,8 +295,6 @@ pub const Game = struct {
     }
 
     pub fn deinit(self: *Game, alloc: std.mem.Allocator) void {
-        // Free allocated resources
-        self.game_image.deinit(alloc);
-        self.game_renderer.deinit(alloc);
+        self.renderer.deinit(alloc);
     }
 };
