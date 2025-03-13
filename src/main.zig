@@ -8,10 +8,6 @@ const audio = @import("audio.zig");
 
 // WASM imports for browser interaction
 extern "env" fn consoleLog(ptr: [*]const u8, len: usize) void;
-extern "env" fn clearCanvas() void;
-extern "env" fn playJumpSound() void;
-extern "env" fn playExplodeSound() void;
-extern "env" fn playFailSound() void;
 
 // Game constants
 const GRAVITY: f32 = 1000.0;
@@ -66,7 +62,6 @@ const Bird = struct {
 
     fn jump(self: *Bird) void {
         self.velocity = JUMP_VELOCITY;
-        playJumpSound();
     }
 };
 

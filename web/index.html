@@ -532,29 +532,8 @@
             console.error('Error creating gain node:', e);
         }
         
-        const audioFiles = [
-            { name: 'jump', path: 'audio/jump.ogg' },
-            { name: 'explode', path: 'audio/explode.ogg' },
-            { name: 'failure', path: 'audio/failure.ogg' }
-        ];
-        
-        // Preload all audio files
-        async function preloadAudio() {
-            try {
-                const loadPromises = audioFiles.map(async (file) => {
-                    const response = await fetch(file.path);
-                    const arrayBuffer = await response.arrayBuffer();
-                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    audioBuffers[file.name] = audioBuffer;
-                    console.log(`Loaded audio: ${file.name}`);
-                });
-                
-                await Promise.all(loadPromises);
-                console.log('All audio files loaded successfully');
-            } catch (error) {
-                console.error('Error loading audio files:', error);
-            }
-        }
+        // Sound names mapping
+        const soundNames = ['jump', 'explode', 'failure'];
         
         // Function to play sound from buffer with volume control
         function playSound(soundName) {
@@ -570,6 +549,16 @@
                 }
                 
                 source.start(0);
+            }
+        }
+        
+        // Function to decode audio data from WASM
+        async function decodeAudioData(data) {
+            try {
+                return await audioContext.decodeAudioData(data);
+            } catch (error) {
+                console.error('Error decoding audio data:', error);
+                return null;
             }
         }
         
@@ -658,66 +647,37 @@
                         }
                     }
                 },
-                clearCanvas: () => {
-                    // WebGL clearing is handled in the render function
-                },
-                // WebGL function bindings
-                glTexImage2D: (target, level, internalformat, width, height, border, format, type, pixels) => {
-                    // Make sure gl is initialized
-                    if (!gl) return;
-                    
-                    // Get the data from WASM memory
-                    const buffer = new Uint8Array(zigModule.memory.buffer);
-                    const frameData = buffer.subarray(pixels, pixels + width * height * 3);
-                    
-                    // Map Zig WebGL constants to JavaScript WebGL constants
-                    const targetMap = {
-                        [window.AsciiFlappyWebGL.GL_TEXTURE_2D]: gl.TEXTURE_2D // GL_TEXTURE_2D
-                    };
-                    
-                    const formatMap = {
-                        [window.AsciiFlappyWebGL.GL_RGB]: gl.RGB // GL_RGB
-                    };
-                    
-                    const typeMap = {
-                        [window.AsciiFlappyWebGL.GL_UNSIGNED_BYTE]: gl.UNSIGNED_BYTE // GL_UNSIGNED_BYTE
-                    };
-                    
-                    // Upload texture data
-                    gl.bindTexture(gl.TEXTURE_2D, texture);
-                    gl.texImage2D(
-                        targetMap[target] || target,
-                        level,
-                        formatMap[internalformat] || internalformat,
-                        width,
-                        height,
-                        border,
-                        formatMap[format] || format,
-                        typeMap[type] || type,
-                        frameData
-                    );
-                },
-                glDrawArrays: (mode, first, count) => {
-                    // Make sure gl is initialized
-                    if (!gl) return;
-                    
-                    // Map Zig WebGL constants to JavaScript WebGL constants
-                    const modeMap = {
-                        [window.AsciiFlappyWebGL.GL_TRIANGLE_STRIP]: gl.TRIANGLE_STRIP // GL_TRIANGLE_STRIP
-                    };
-                    
-                    // Draw the quad
-                    gl.drawArrays(modeMap[mode] || mode, first, count);
-                },
-                // Audio functions
-                playJumpSound: () => {
-                    playSound('jump');
-                },
-                playExplodeSound: () => {
-                    playSound('explode');
-                },
-                playFailSound: () => {
-                    playSound('failure');
+                // New unified audio function that receives audio data from WASM
+                playAudioFromWasm: async (dataPtr, dataLen, soundId) => {
+                    try {
+                        // Get the audio data from WASM memory
+                        const buffer = new Uint8Array(zigModule.memory.buffer);
+                        const audioData = buffer.slice(dataPtr, dataPtr + dataLen);
+                        
+                        // Convert to ArrayBuffer for Web Audio API
+                        const arrayBuffer = audioData.buffer.slice(
+                            audioData.byteOffset, 
+                            audioData.byteOffset + audioData.byteLength
+                        );
+                        
+                        // Get the sound name based on ID
+                        const soundName = soundNames[soundId] || 'unknown';
+                        
+                        // Check if we've already decoded this audio
+                        if (!audioBuffers[soundName]) {
+                            // Decode the audio data
+                            const audioBuffer = await decodeAudioData(arrayBuffer);
+                            if (audioBuffer) {
+                                audioBuffers[soundName] = audioBuffer;
+                                console.log(`Decoded audio: ${soundName}`);
+                            }
+                        }
+                        
+                        // Play the sound
+                        playSound(soundName);
+                    } catch (error) {
+                        console.error('Error playing audio from WASM:', error);
+                    }
                 },
                 executeBatchedCommands: (cmdPtr, width, height) => {
                     window.AsciiFlappyWebGL.executeBatch(cmdPtr, width, height, zigModule.memory);
@@ -867,7 +827,7 @@
         // Initialize WebAssembly module
         async function initWasm() {
             try {
-                statusElement.textContent = "Loading audio and WASM module...";
+                statusElement.textContent = "Loading WASM module...";
                 
                 // Initialize WebGL
                 if (!initializeWebGL()) {
@@ -897,10 +857,7 @@
                 handleResize();
                 window.addEventListener('resize', handleResize);
                 
-                // First preload all audio files
-                await preloadAudio();
-                
-                // Then load the WASM file
+                // Load the WASM file
                 const wasmUrl = 'flapper.wasm';
                 
                 const response = await fetch(wasmUrl);
