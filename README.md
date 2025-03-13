@@ -192,6 +192,10 @@ pub fn render(self: *Game) void {
 }
 ```
 
+## TODOs:
+- [ ] Update canvas size. Currently we set size in index.html AND entities.zig - We should have one source of truth and it should be easily adjustable (different aspect ratios, etc) by future developers to give desktop vs mobile options.
+- [ ] Implement threading? or just forgo this and move straight to new webgpu template.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
